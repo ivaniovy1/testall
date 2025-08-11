@@ -3,16 +3,21 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Neon Audio Visualizer — Улучшенный</title>
+<title>Neon Audio Visualizer — с Эквалайзером и Кастомом</title>
+
+<!-- Подключаем шрифт из Google Fonts -->
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet" />
+
 <style>
 :root {
   --bg: #071021;
   --panel: rgba(6,10,20,0.6);
   --accent1: #00f6ff;
   --accent2: #7c00ff;
-  --glass: rgba(255,255,255,0.04);
   --bars-color-start: #00f6ff;
   --bars-color-end: #7c00ff;
+  --text-color: #e6f7ff;
+  --text-shadow: 0 0 12px rgba(0,246,255,0.3), 0 0 28px rgba(124,0,255,0.25);
 }
 * {
   box-sizing: border-box;
@@ -20,8 +25,8 @@
 html, body {
   height: 100%;
   margin: 0;
-  font-family: Inter, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Arial;
-  color: #e6f7ff;
+  font-family: 'Poppins', sans-serif, Inter, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Arial;
+  color: var(--text-color);
   background: linear-gradient(180deg, #04060a 0%, var(--bg) 60%);
   display: flex;
   align-items: center;
@@ -104,7 +109,8 @@ html, body {
   bottom: 18%;
   font-size: 26px;
   font-weight: 600;
-  text-shadow: 0 0 12px rgba(0,246,255,0.08), 0 0 28px rgba(124,0,255,0.06);
+  color: var(--text-color);
+  text-shadow: var(--text-shadow);
   z-index: 2;
   user-select: none;
 }
@@ -131,13 +137,14 @@ html, body {
   transition: height 0.08s linear;
 }
 
-/* Right panel */
+/* Панель справа */
 .panel {
   padding: 18px;
   background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
   border-left: 1px solid rgba(255,255,255,0.02);
   display: flex;
   flex-direction: column;
+  overflow-y: auto;
 }
 .h {
   display: flex;
@@ -214,6 +221,14 @@ input[type=range]::-webkit-slider-thumb {
   border-radius: 50%;
   margin-top: -5px;
 }
+.color-input {
+  width: 100%;
+  height: 32px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  margin-top: 4px;
+}
 .small {
   font-size: 13px;
   color: #9fb4c9;
@@ -238,7 +253,6 @@ input[type=range]::-webkit-slider-thumb {
   .panel {
     order: 2;
     height: 40vh;
-    overflow: auto;
   }
   .canvas-wrap {
     width: 95%;
@@ -280,6 +294,7 @@ input[type=range]::-webkit-slider-thumb {
         <div class="small">Upload media, tweak and export</div>
       </div>
     </div>
+
     <div class="controls">
       <div class="row">
         <label class="btn">Video
@@ -301,7 +316,7 @@ input[type=range]::-webkit-slider-thumb {
         <input
           id="titleInput"
           placeholder="Artist — Song"
-          style="flex:1;padding:9px;border-radius:8px;border:1px solid rgba(255,255,255,0.04);background:transparent;color:#e6f7ff"
+          style="flex:1;padding:9px;border-radius:8px;border:1px solid rgba(255,255,255,0.04);background:transparent;color:var(--text-color);"
         />
         <button id="applyTitle" class="btn">Apply</button>
       </div>
@@ -321,25 +336,74 @@ input[type=range]::-webkit-slider-thumb {
 
       <div class="row">
         <label class="range" style="flex:1"
-          >Bars count
+          >Bars count (bottom)
           <input id="barsCount" type="range" min="10" max="64" step="1" value="48" />
+        </label>
+      </div>
+
+      <div class="row">
+        <label class="range" style="flex:1"
+          >Circle bars count
+          <input id="circleBarsCount" type="range" min="10" max="64" step="1" value="48" />
         </label>
       </div>
 
       <div class="row">
         <label style="flex:1;display:flex;flex-direction:column;gap:6px">
           Bars Color Start
-          <input id="barsColorStart" type="color" value="#00f6ff" />
+          <input id="barsColorStart" class="color-input" type="color" value="#00f6ff" />
         </label>
       </div>
       <div class="row">
         <label style="flex:1;display:flex;flex-direction:column;gap:6px">
           Bars Color End
-          <input id="barsColorEnd" type="color" value="#7c00ff" />
+          <input id="barsColorEnd" class="color-input" type="color" value="#7c00ff" />
         </label>
       </div>
 
-      <div style="display:flex;gap:8px">
+      <div class="row">
+        <label style="flex:1;display:flex;flex-direction:column;gap:6px">
+          Text Color
+          <input id="textColor" class="color-input" type="color" value="#e6f7ff" />
+        </label>
+      </div>
+
+      <div class="row">
+        <label style="flex:1;display:flex;flex-direction:column;gap:6px">
+          Text Shadow Color
+          <input id="textShadowColor" class="color-input" type="color" value="#7c00ff" />
+        </label>
+      </div>
+
+      <hr />
+
+      <div style="font-weight: 600; margin-bottom: 8px;">Audio Equalizer</div>
+      <div class="row">
+        <label class="range" style="flex:1"
+          >Volume
+          <input id="eqVolume" type="range" min="0" max="2" step="0.01" value="1" />
+        </label>
+      </div>
+      <div class="row">
+        <label class="range" style="flex:1"
+          >Bass (60Hz)
+          <input id="eqBass" type="range" min="-15" max="15" step="0.5" value="0" />
+        </label>
+      </div>
+      <div class="row">
+        <label class="range" style="flex:1"
+          >Mid (1000Hz)
+          <input id="eqMid" type="range" min="-15" max="15" step="0.5" value="0" />
+        </label>
+      </div>
+      <div class="row">
+        <label class="range" style="flex:1"
+          >Treble (8000Hz)
+          <input id="eqTreble" type="range" min="-15" max="15" step="0.5" value="0" />
+        </label>
+      </div>
+
+      <div style="display:flex;gap:8px; margin-top: 12px;">
         <button id="recordBtn" class="btn primary">Start Recording</button>
         <button id="downloadRender" class="btn">Download Render</button>
       </div>
@@ -360,7 +424,6 @@ input[type=range]::-webkit-slider-thumb {
 
 <script>
 (async () => {
-  // Elements
   const bgVideo = document.getElementById('bgVideo');
   const videoFile = document.getElementById('videoFile');
   const imageFile = document.getElementById('imageFile');
@@ -376,128 +439,263 @@ input[type=range]::-webkit-slider-thumb {
   const barsOpacity = document.getElementById('barsOpacity');
   const circleSize = document.getElementById('circleSize');
   const barsCountInput = document.getElementById('barsCount');
+  const circleBarsCountInput = document.getElementById('circleBarsCount');
   const barsColorStart = document.getElementById('barsColorStart');
   const barsColorEnd = document.getElementById('barsColorEnd');
+  const textColorInput = document.getElementById('textColor');
+  const textShadowColorInput = document.getElementById('textShadowColor');
   const dropzone = document.getElementById('dropzone');
   const recordBtn = document.getElementById('recordBtn');
   const downloadRender = document.getElementById('downloadRender');
   const downloadVideoBtn = document.getElementById('downloadVideoBtn');
 
-  // State
+  // Audio equalizer controls
+  const eqVolume = document.getElementById('eqVolume');
+  const eqBass = document.getElementById('eqBass');
+  const eqMid = document.getElementById('eqMid');
+  const eqTreble = document.getElementById('eqTreble');
+
   let audioEl = null;
   let audioCtx = null;
   let analyser = null;
   let dataArray = null;
   let sourceNode = null;
+  let gainNode = null;
+  let bassFilter = null;
+  let midFilter = null;
+  let trebleFilter = null;
   let raf;
   let circleDiameter = parseInt(circleSize.value);
   let barsCount = parseInt(barsCountInput.value);
+  let circleBarsCount = parseInt(circleBarsCountInput.value);
   let barsEls = [];
 
-  // Canvas sizing
-  function resize() {
-    const rect = outputCanvas.getBoundingClientRect();
-    outputCanvas.width = rect.width * devicePixelRatio;
-    outputCanvas.height = rect.height * devicePixelRatio;
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
-    ctx.scale(devicePixelRatio, devicePixelRatio);
+  // Set initial sizes
+  function resizeCanvas() {
+    const dpr = window.devicePixelRatio || 1;
+    outputCanvas.width = outputCanvas.clientWidth * dpr;
+    outputCanvas.height = outputCanvas.clientHeight * dpr;
   }
+  resizeCanvas();
   window.addEventListener('resize', () => {
-    resize();
-    createBars();
+    resizeCanvas();
   });
-  resize();
 
-  // Create bars DOM elements for overlay (under text)
+  // Setup bars overlay with barsCount bars
   function createBars() {
     barsOverlay.innerHTML = '';
     barsEls = [];
-    barsCount = parseInt(barsCountInput.value);
-    for (let i = 0; i < barsCount; i++) {
-      const b = document.createElement('div');
-      b.className = 'bar';
-      b.style.height = '6px';
-      b.style.opacity = barsOpacity.value;
-      b.style.transition = 'height 0.08s linear';
-      barsOverlay.appendChild(b);
-      barsEls.push(b);
+    for(let i = 0; i < barsCount; i++) {
+      const bar = document.createElement('div');
+      bar.className = 'bar';
+      barsOverlay.appendChild(bar);
+      barsEls.push(bar);
     }
   }
   createBars();
 
-  // Load files
-  function loadVideoFile(file) {
+  // Load video to bg video element
+  videoFile.addEventListener('change', () => {
+    const file = videoFile.files[0];
     if (!file) return;
     const url = URL.createObjectURL(file);
     bgVideo.src = url;
     bgVideo.play();
-    // prepare download
-    downloadVideoBtn.onclick = () => {
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = file.name || 'video.mp4';
-      a.click();
-    };
-  }
-  function loadImageFile(file) {
-    if (!file) return;
-    coverImage.src = URL.createObjectURL(file);
-  }
-  async function loadAudioFile(file) {
-    if (!file) return;
-    if (audioEl) {
-      audioEl.pause();
-      audioEl.src = '';
-    }
-    audioEl = new Audio(URL.createObjectURL(file));
-    audioEl.loop = true;
-    await audioEl.play();
-    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    if (sourceNode) try {
-      sourceNode.disconnect();
-    } catch (e) { }
-    sourceNode = audioCtx.createMediaElementSource(audioEl);
-    analyser = audioCtx.createAnalyser();
-    analyser.fftSize = 1024;
-    const bufferLength = analyser.frequencyBinCount;
-    dataArray = new Uint8Array(bufferLength);
-    sourceNode.connect(analyser);
-    const destination = audioCtx.destination;
-    sourceNode.connect(destination);
-    try { await audioCtx.resume(); } catch (e) { }
-  }
-
-  videoFile.addEventListener('change', e => loadVideoFile(e.target.files[0]));
-  imageFile.addEventListener('change', e => loadImageFile(e.target.files[0]));
-  audioFile.addEventListener('change', e => loadAudioFile(e.target.files[0]));
-  applyTitle.addEventListener('click', () => {
-    songTitle.textContent = titleInput.value || 'Artist — Song';
+    downloadVideoBtn.disabled = false;
+    downloadVideoBtn.dataset.url = url;
   });
 
+  downloadVideoBtn.addEventListener('click', () => {
+    const url = downloadVideoBtn.dataset.url;
+    if (url) {
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'background-video.' + (url.split('.').pop() || 'mp4');
+      a.click();
+    }
+  });
+
+  // Load image cover
+  imageFile.addEventListener('change', () => {
+    const file = imageFile.files[0];
+    if (!file) return;
+    const url = URL.createObjectURL(file);
+    coverImage.src = url;
+  });
+
+  // Audio loading and setup audio context & nodes
+  audioFile.addEventListener('change', () => {
+    const file = audioFile.files[0];
+    if (!file) return;
+
+    if(audioEl){
+      audioEl.pause();
+      audioEl = null;
+      if(audioCtx) {
+        audioCtx.close();
+        audioCtx = null;
+      }
+    }
+
+    audioEl = new Audio(URL.createObjectURL(file));
+    audioEl.loop = true;
+    audioEl.crossOrigin = "anonymous";
+    audioEl.play();
+
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    sourceNode = audioCtx.createMediaElementSource(audioEl);
+
+    gainNode = audioCtx.createGain();
+    bassFilter = audioCtx.createBiquadFilter();
+    bassFilter.type = "lowshelf";
+    bassFilter.frequency.value = 60;
+    bassFilter.gain.value = 0;
+
+    midFilter = audioCtx.createBiquadFilter();
+    midFilter.type = "peaking";
+    midFilter.frequency.value = 1000;
+    midFilter.Q.value = 1;
+    midFilter.gain.value = 0;
+
+    trebleFilter = audioCtx.createBiquadFilter();
+    trebleFilter.type = "highshelf";
+    trebleFilter.frequency.value = 8000;
+    trebleFilter.gain.value = 0;
+
+    analyser = audioCtx.createAnalyser();
+    analyser.fftSize = 256;
+    dataArray = new Uint8Array(analyser.frequencyBinCount);
+
+    sourceNode.connect(bassFilter);
+    bassFilter.connect(midFilter);
+    midFilter.connect(trebleFilter);
+    trebleFilter.connect(gainNode);
+    gainNode.connect(analyser);
+    analyser.connect(audioCtx.destination);
+
+    draw();
+  });
+
+  // Apply title text
+  applyTitle.addEventListener('click', () => {
+    songTitle.textContent = titleInput.value || "Artist — Song";
+  });
+
+  // Sync text color inputs to CSS variables
+  function updateTextColors() {
+    const c = textColorInput.value;
+    const shadowC = textShadowColorInput.value;
+    songTitle.style.color = c;
+    songTitle.style.textShadow = `0 0 12px ${c}80, 0 0 28px ${shadowC}60`;
+  }
+  textColorInput.addEventListener('input', updateTextColors);
+  textShadowColorInput.addEventListener('input', updateTextColors);
+  updateTextColors();
+
+  // Update bars opacity CSS var
+  barsOpacity.addEventListener('input', () => {
+    document.documentElement.style.setProperty('--bars-opacity', barsOpacity.value);
+  });
+  barsOpacity.dispatchEvent(new Event('input'));
+
+  // Circle size control (circle & image & redraw)
   circleSize.addEventListener('input', () => {
     circleDiameter = parseInt(circleSize.value);
     circleImg.style.width = circleDiameter + 'px';
     circleImg.style.height = circleDiameter + 'px';
   });
-  barsOpacity.addEventListener('input', () => {
-    const v = barsOpacity.value;
-    barsEls.forEach(b => b.style.opacity = v);
-  });
+  circleSize.dispatchEvent(new Event('input'));
+
+  // Bars count bottom
   barsCountInput.addEventListener('input', () => {
+    barsCount = parseInt(barsCountInput.value);
     createBars();
   });
-  barsColorStart.addEventListener('input', () => {
+  barsCountInput.dispatchEvent(new Event('input'));
+
+  // Circle bars count
+  circleBarsCountInput.addEventListener('input', () => {
+    circleBarsCount = parseInt(circleBarsCountInput.value);
+  });
+  circleBarsCountInput.dispatchEvent(new Event('input'));
+
+  // Bars colors
+  function updateBarsColors() {
     document.documentElement.style.setProperty('--bars-color-start', barsColorStart.value);
-  });
-  barsColorEnd.addEventListener('input', () => {
     document.documentElement.style.setProperty('--bars-color-end', barsColorEnd.value);
+  }
+  barsColorStart.addEventListener('input', updateBarsColors);
+  barsColorEnd.addEventListener('input', updateBarsColors);
+  updateBarsColors();
+
+  // Audio equalizer control handlers
+  eqVolume.addEventListener('input', () => {
+    if(gainNode) gainNode.gain.value = eqVolume.value;
   });
+  eqBass.addEventListener('input', () => {
+    if(bassFilter) bassFilter.gain.value = eqBass.value;
+  });
+  eqMid.addEventListener('input', () => {
+    if(midFilter) midFilter.gain.value = eqMid.value;
+  });
+  eqTreble.addEventListener('input', () => {
+    if(trebleFilter) trebleFilter.gain.value = eqTreble.value;
+  });
+
+  // Visualizer draw loop
+  function draw() {
+    if (!analyser || !dataArray) return;
+
+    analyser.getByteFrequencyData(dataArray);
+    ctx.clearRect(0, 0, outputCanvas.width, outputCanvas.height);
+
+    const w = outputCanvas.width;
+    const h = outputCanvas.height;
+    const centerX = w / 2;
+    const centerY = h / 2;
+    const radius = circleDiameter / 2 + 12;
+
+    // Draw circle bars
+    const angleStep = (2 * Math.PI) / circleBarsCount;
+    for (let i = 0; i < circleBarsCount; i++) {
+      const val = dataArray[i] || 0;
+      const barLength = val / 2;
+      const angle = angleStep * i - Math.PI / 2;
+
+      const xStart = centerX + Math.cos(angle) * radius;
+      const yStart = centerY + Math.sin(angle) * radius;
+      const xEnd = centerX + Math.cos(angle) * (radius + barLength);
+      const yEnd = centerY + Math.sin(angle) * (radius + barLength);
+
+      const grad = ctx.createLinearGradient(xStart, yStart, xEnd, yEnd);
+      grad.addColorStop(0, barsColorStart.value);
+      grad.addColorStop(1, barsColorEnd.value);
+
+      ctx.strokeStyle = grad;
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(xStart, yStart);
+      ctx.lineTo(xEnd, yEnd);
+      ctx.stroke();
+    }
+
+    // Draw bars overlay (bottom)
+    for (let i = 0; i < barsEls.length; i++) {
+      const val = dataArray[i] || 0;
+      barsEls[i].style.height = `${val / 2 + 6}px`;
+      barsEls[i].style.opacity = barsOpacity.value;
+      barsEls[i].style.background = `linear-gradient(180deg, ${barsColorStart.value}, ${barsColorEnd.value})`;
+      barsEls[i].style.boxShadow = `0 6px 18px ${barsColorEnd.value}80`;
+    }
+
+    raf = requestAnimationFrame(draw);
+  }
 
   // Drag & drop support
   ['dragenter', 'dragover'].forEach(ev => {
     dropzone.addEventListener(ev, e => {
       e.preventDefault();
-      dropzone.style.borderColor = 'rgba(0,246,255,0.2)';
+      dropzone.style.borderColor = barsColorStart.value;
     });
   });
   ['dragleave', 'drop'].forEach(ev => {
@@ -512,69 +710,63 @@ input[type=range]::-webkit-slider-thumb {
     for (const file of e.dataTransfer.files) {
       if (file.type.startsWith('video/')) {
         videoFile.files = e.dataTransfer.files;
-        loadVideoFile(file);
+        const event = new Event('change');
+        videoFile.dispatchEvent(event);
       } else if (file.type.startsWith('image/')) {
         imageFile.files = e.dataTransfer.files;
-        loadImageFile(file);
+        const event = new Event('change');
+        imageFile.dispatchEvent(event);
       } else if (file.type.startsWith('audio/')) {
         audioFile.files = e.dataTransfer.files;
-        loadAudioFile(file);
+        const event = new Event('change');
+        audioFile.dispatchEvent(event);
       }
     }
   });
 
-  // Draw loop for circle visualizer & bars update
-  function draw() {
-    if (!analyser) return;
-    analyser.getByteFrequencyData(dataArray);
-    ctx.clearRect(0, 0, outputCanvas.width, outputCanvas.height);
-
-    // Get canvas size
-    const w = outputCanvas.width / devicePixelRatio;
-    const h = outputCanvas.height / devicePixelRatio;
-
-    // Draw circle visualizer around circle image center
-    const centerX = w / 2;
-    const centerY = h / 2;
-    const radius = circleDiameter / 2 + 16;
-
-    const barsCountCircle = 48; // fixed for circle visualizer
-    const angleStep = (2 * Math.PI) / barsCountCircle;
-
-    for (let i = 0; i < barsCountCircle; i++) {
-      const val = dataArray[i];
-      const barLength = val / 2;
-      const angle = angleStep * i - Math.PI / 2;
-
-      const xStart = centerX + Math.cos(angle) * radius;
-      const yStart = centerY + Math.sin(angle) * radius;
-      const xEnd = centerX + Math.cos(angle) * (radius + barLength);
-      const yEnd = centerY + Math.sin(angle) * (radius + barLength);
-
-      ctx.strokeStyle = `hsl(${(i * 360) / barsCountCircle}, 100%, 70%)`;
-      ctx.lineWidth = 3;
-      ctx.beginPath();
-      ctx.moveTo(xStart, yStart);
-      ctx.lineTo(xEnd, yEnd);
-      ctx.stroke();
+  // Recording setup
+  let recorder = null;
+  let recordedChunks = [];
+  recordBtn.addEventListener('click', () => {
+    if (recorder && recorder.state === 'recording') {
+      recorder.stop();
+      recordBtn.textContent = 'Start Recording';
+      return;
+    }
+    recordedChunks = [];
+    let stream = outputCanvas.captureStream(30);
+    if (audioCtx && audioEl && !audioEl.paused) {
+      const audioStreamDest = audioCtx.createMediaStreamDestination();
+      sourceNode.connect(audioStreamDest);
+      stream.addTrack(audioStreamDest.stream.getAudioTracks()[0]);
     }
 
-    // Update bars below text
-    for (let i = 0; i < barsEls.length; i++) {
-      const val = dataArray[i] || 0;
-      barsEls[i].style.height = `${val / 2 + 6}px`;
-    }
+    recorder = new MediaRecorder(stream, { mimeType: 'video/webm;codecs=vp8,opus' });
+    recorder.ondataavailable = e => {
+      if (e.data.size > 0) recordedChunks.push(e.data);
+    };
+    recorder.onstop = e => {
+      const blob = new Blob(recordedChunks, { type: 'video/webm' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'visualizer.webm';
+      a.click();
+      URL.revokeObjectURL(url);
+    };
+    recorder.start();
+    recordBtn.textContent = 'Stop Recording';
+  });
 
-    requestAnimationFrame(draw);
-  }
-
-  // Start the animation loop only when audio is loaded
-  function startVisualizer() {
-    if (!audioEl) return;
-    if (!analyser) return;
-    cancelAnimationFrame(raf);
-    draw();
-  }
+  // Download canvas render as PNG
+  downloadRender.addEventListener('click', () => {
+    outputCanvas.toBlob(blob => {
+      const a = document.createElement('a');
+      a.download = 'visualizer.png';
+      a.href = URL.createObjectURL(blob);
+      a.click();
+    });
+  });
 
   // Keyboard shortcuts
   window.addEventListener('keydown', e => {
@@ -592,84 +784,9 @@ input[type=range]::-webkit-slider-thumb {
     }
   });
 
-  // Recording setup
-  let recorder = null;
-  let recordedChunks = [];
-  recordBtn.addEventListener('click', () => {
-    if (recorder && recorder.state === 'recording') {
-      recorder.stop();
-      recordBtn.textContent = 'Start Recording';
-      return;
-    }
+  // Initialize with some default text
+  songTitle.textContent = "Artist — Song";
 
-    recordedChunks = [];
-    let stream = outputCanvas.captureStream(30);
-    if (audioEl && !audioEl.paused) {
-      const audioStream = audioCtx.createMediaStreamDestination();
-      sourceNode.connect(audioStream);
-      stream.addTrack(audioStream.stream.getAudioTracks()[0]);
-    }
-
-    recorder = new MediaRecorder(stream, { mimeType: 'video/webm' });
-    recorder.ondataavailable = e => {
-      if (e.data.size > 0) recordedChunks.push(e.data);
-    };
-    recorder.onstop = e => {
-      const blob = new Blob(recordedChunks, { type: 'video/webm' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'visualizer.webm';
-      a.click();
-      URL.revokeObjectURL(url);
-    };
-    recorder.start();
-    recordBtn.textContent = 'Stop Recording';
-  });
-
-  // Screenshot export
-  downloadRender.addEventListener('click', () => {
-    outputCanvas.toBlob(blob => {
-      const a = document.createElement('a');
-      a.download = 'visualizer.png';
-      a.href = URL.createObjectURL(blob);
-      a.click();
-    });
-  });
-
-  // Auto-start visualizer when audio loaded
-  audioFile.addEventListener('change', () => {
-    setTimeout(startVisualizer, 300);
-  });
-
-  // Auto resize and circle size init
-  circleSize.dispatchEvent(new Event('input'));
-
-  // Presets
-  document.getElementById('presetNeon').addEventListener('click', () => {
-    barsColorStart.value = '#00f6ff';
-    barsColorEnd.value = '#7c00ff';
-    barsOpacity.value = 0.7;
-    barsCountInput.value = 48;
-    circleSize.value = 240;
-    barsColorStart.dispatchEvent(new Event('input'));
-    barsColorEnd.dispatchEvent(new Event('input'));
-    barsOpacity.dispatchEvent(new Event('input'));
-    barsCountInput.dispatchEvent(new Event('input'));
-    circleSize.dispatchEvent(new Event('input'));
-  });
-  document.getElementById('presetCalm').addEventListener('click', () => {
-    barsColorStart.value = '#7c7cff';
-    barsColorEnd.value = '#00ffff';
-    barsOpacity.value = 0.3;
-    barsCountInput.value = 28;
-    circleSize.value = 180;
-    barsColorStart.dispatchEvent(new Event('input'));
-    barsColorEnd.dispatchEvent(new Event('input'));
-    barsOpacity.dispatchEvent(new Event('input'));
-    barsCountInput.dispatchEvent(new Event('input'));
-    circleSize.dispatchEvent(new Event('input'));
-  });
 })();
 </script>
 </body>
