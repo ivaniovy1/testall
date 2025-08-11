@@ -3,43 +3,259 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Neon Audio Visualizer — Onefile</title>
+<title>Neon Audio Visualizer — Улучшенный</title>
 <style>
-:root{--bg:#071021;--panel:rgba(6,10,20,0.6);--accent1:#00f6ff;--accent2:#7c00ff;--glass:rgba(255,255,255,0.04)}
-*{box-sizing:border-box}
-html,body{height:100%;margin:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,'Segoe UI',Roboto,Arial;color:#e6f7ff}
-body{background:linear-gradient(180deg,#04060a 0%,var(--bg) 60%);display:flex;align-items:center;justify-content:center;padding:18px}
-.app{width:100%;max-width:1200px;height:80vh;background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));border-radius:14px;box-shadow:0 12px 50px rgba(2,6,23,0.7);display:grid;grid-template-columns:1fr 360px;overflow:hidden}
-.stage{position:relative;background:#071021;display:flex;align-items:center;justify-content:center}
-.bg-video{position:absolute;inset:0;object-fit:cover;width:100%;height:100%;filter:brightness(0.6) saturate(1.05);}
-.canvas-wrap{position:relative;width:86%;height:86%;max-width:900px;max-height:680px;display:flex;align-items:center;justify-content:center}
-#outputCanvas{width:100%;height:100%;border-radius:14px;box-shadow:0 10px 40px rgba(0,0,0,0.6);background:radial-gradient(circle at 30% 20%, rgba(124,0,255,0.06), transparent 8%), linear-gradient(180deg, rgba(0,0,0,0.25), transparent)}
-.circle-img{position:absolute;width:240px;height:240px;border-radius:50%;overflow:hidden;display:flex;align-items:center;justify-content:center;left:50%;top:48%;transform:translate(-50%,-50%);}
-.circle-img img{width:110%;height:110%;object-fit:cover;animation:spin 22s linear infinite}
-@keyframes spin{from{transform:translate(-50%,-50%) rotate(0)}to{transform:translate(-50%,-50%) rotate(360deg)}}
-.song-title{position:absolute;left:50%;transform:translateX(-50%);bottom:18%;font-size:26px;font-weight:600;text-shadow:0 0 12px rgba(0,246,255,0.08),0 0 28px rgba(124,0,255,0.06)}
-.bars-overlay{position:absolute;left:50%;transform:translateX(-50%);bottom:12%;width:60%;height:60px;display:flex;align-items:flex-end;justify-content:center;gap:6px}
-.bar{width:6px;background:linear-gradient(180deg,var(--accent1),var(--accent2));box-shadow:0 6px 18px rgba(124,0,255,0.12);border-radius:3px;opacity:0.8}
+:root {
+  --bg: #071021;
+  --panel: rgba(6,10,20,0.6);
+  --accent1: #00f6ff;
+  --accent2: #7c00ff;
+  --glass: rgba(255,255,255,0.04);
+  --bars-color-start: #00f6ff;
+  --bars-color-end: #7c00ff;
+}
+* {
+  box-sizing: border-box;
+}
+html, body {
+  height: 100%;
+  margin: 0;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Arial;
+  color: #e6f7ff;
+  background: linear-gradient(180deg, #04060a 0%, var(--bg) 60%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 18px;
+}
+.app {
+  width: 100%;
+  max-width: 1200px;
+  height: 80vh;
+  background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+  border-radius: 14px;
+  box-shadow: 0 12px 50px rgba(2,6,23,0.7);
+  display: grid;
+  grid-template-columns: 1fr 360px;
+  overflow: hidden;
+}
+.stage {
+  position: relative;
+  background: var(--bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.bg-video {
+  position: absolute;
+  inset: 0;
+  object-fit: cover;
+  width: 100%;
+  height: 100%;
+  filter: brightness(0.6) saturate(1.05);
+  z-index: -2;
+}
+.canvas-wrap {
+  position: relative;
+  width: 86%;
+  height: 86%;
+  max-width: 900px;
+  max-height: 680px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+#outputCanvas {
+  width: 100%;
+  height: 100%;
+  border-radius: 14px;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.6);
+  background: radial-gradient(circle at 30% 20%, rgba(124,0,255,0.06), transparent 8%), linear-gradient(180deg, rgba(0,0,0,0.25), transparent);
+  position: relative;
+  z-index: 1;
+}
+.circle-img {
+  position: absolute;
+  left: 50%;
+  top: 48%;
+  border-radius: 50%;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  will-change: transform;
+  animation: spin 22s linear infinite;
+  z-index: 2;
+}
+.circle-img img {
+  width: 110%;
+  height: 110%;
+  object-fit: cover;
+}
+@keyframes spin {
+  from { transform: translate(-50%, -50%) rotate(0deg); }
+  to { transform: translate(-50%, -50%) rotate(360deg); }
+}
+.song-title {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: 18%;
+  font-size: 26px;
+  font-weight: 600;
+  text-shadow: 0 0 12px rgba(0,246,255,0.08), 0 0 28px rgba(124,0,255,0.06);
+  z-index: 2;
+  user-select: none;
+}
+.bars-overlay {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: 12%;
+  width: 60%;
+  height: 60px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 6px;
+  z-index: 2;
+  pointer-events: none;
+}
+.bar {
+  width: 6px;
+  background: linear-gradient(180deg, var(--bars-color-start), var(--bars-color-end));
+  box-shadow: 0 6px 18px rgba(124,0,255,0.12);
+  border-radius: 3px;
+  opacity: 0.8;
+  transition: height 0.08s linear;
+}
 
 /* Right panel */
-.panel{padding:18px;background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));border-left:1px solid rgba(255,255,255,0.02);display:flex;flex-direction:column}
-.h{display:flex;align-items:center;gap:10px;margin-bottom:10px}
-.logo{width:44px;height:44px;border-radius:8px;background:linear-gradient(90deg,var(--accent1),var(--accent2));box-shadow:0 8px 28px rgba(124,0,255,0.12)}
-.controls{display:flex;flex-direction:column;gap:10px}
-.btn{background:transparent;border:1px solid rgba(255,255,255,0.06);padding:9px 12px;border-radius:10px;color:#cfeff9;cursor:pointer;display:inline-flex;align-items:center;gap:8px}
-.btn.primary{background:linear-gradient(90deg, rgba(0,246,255,0.08), rgba(124,0,255,0.06));border:1px solid rgba(0,246,255,0.14);color:var(--accent1)}
-.input-file{display:none}
-.drop{padding:12px;border-radius:10px;border:1px dashed rgba(255,255,255,0.03);background:var(--panel);text-align:center;color:#9fb4c9}
-.row{display:flex;gap:8px;align-items:center}
-label.range{display:flex;flex-direction:column;font-size:13px;color:#9fb4c9}
-input[type=range]{-webkit-appearance:none;width:100%}
-input[type=range]::-webkit-slider-runnable-track{height:6px;background:linear-gradient(90deg,var(--accent1),var(--accent2));border-radius:6px}
-input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;background:#fff;border-radius:50%;margin-top:-5px}
-.small{font-size:13px;color:#9fb4c9}
-.footer{margin-top:auto;font-size:12px;color:#8ea8be}
-.badge{padding:6px 8px;border-radius:8px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.02)}
+.panel {
+  padding: 18px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+  border-left: 1px solid rgba(255,255,255,0.02);
+  display: flex;
+  flex-direction: column;
+}
+.h {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.logo {
+  width: 44px;
+  height: 44px;
+  border-radius: 8px;
+  background: linear-gradient(90deg, var(--accent1), var(--accent2));
+  box-shadow: 0 8px 28px rgba(124,0,255,0.12);
+}
+.controls {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.btn {
+  background: transparent;
+  border: 1px solid rgba(255,255,255,0.06);
+  padding: 9px 12px;
+  border-radius: 10px;
+  color: #cfeff9;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  user-select: none;
+}
+.btn.primary {
+  background: linear-gradient(90deg, rgba(0,246,255,0.08), rgba(124,0,255,0.06));
+  border: 1px solid rgba(0,246,255,0.14);
+  color: var(--accent1);
+}
+.input-file {
+  display: none;
+}
+.drop {
+  padding: 12px;
+  border-radius: 10px;
+  border: 1px dashed rgba(255,255,255,0.03);
+  background: var(--panel);
+  text-align: center;
+  color: #9fb4c9;
+  user-select: none;
+}
+.row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+label.range {
+  display: flex;
+  flex-direction: column;
+  font-size: 13px;
+  color: #9fb4c9;
+}
+input[type=range] {
+  -webkit-appearance: none;
+  width: 100%;
+}
+input[type=range]::-webkit-slider-runnable-track {
+  height: 6px;
+  background: linear-gradient(90deg, var(--accent1), var(--accent2));
+  border-radius: 6px;
+}
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 16px;
+  height: 16px;
+  background: #fff;
+  border-radius: 50%;
+  margin-top: -5px;
+}
+.small {
+  font-size: 13px;
+  color: #9fb4c9;
+}
+.footer {
+  margin-top: auto;
+  font-size: 12px;
+  color: #8ea8be;
+}
+.badge {
+  padding: 6px 8px;
+  border-radius: 8px;
+  background: rgba(255,255,255,0.02);
+  border: 1px solid rgba(255,255,255,0.02);
+}
 
-@media (max-width:980px){.app{grid-template-columns:1fr;height:90vh}.panel{order:2;height:40vh;overflow:auto}.canvas-wrap{width:95%;height:70%}.circle-img{width:160px;height:160px}.song-title{font-size:20px;bottom:14%}.bars-overlay{width:80%}}
+@media (max-width:980px) {
+  .app {
+    grid-template-columns: 1fr;
+    height: 90vh;
+  }
+  .panel {
+    order: 2;
+    height: 40vh;
+    overflow: auto;
+  }
+  .canvas-wrap {
+    width: 95%;
+    height: 70%;
+  }
+  .circle-img {
+    width: 160px !important;
+    height: 160px !important;
+  }
+  .song-title {
+    font-size: 20px;
+    bottom: 14%;
+  }
+  .bars-overlay {
+    width: 80%;
+  }
+}
 </style>
 </head>
 <body>
@@ -48,35 +264,79 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
     <video id="bgVideo" class="bg-video" autoplay loop muted playsinline></video>
     <div class="canvas-wrap">
       <canvas id="outputCanvas"></canvas>
-      <div class="circle-img"><img id="coverImage" src="" alt="cover"></div>
+      <div class="circle-img" id="circleImg" style="width:240px; height:240px;">
+        <img id="coverImage" src="" alt="cover" />
+      </div>
       <div class="song-title" id="songTitle">Artist — Song</div>
       <div class="bars-overlay" id="barsOverlay"></div>
     </div>
   </div>
 
   <div class="panel">
-    <div class="h"><div class="logo"></div><div><div style="font-weight:600">Neon Visualizer</div><div class="small">Upload media, tweak and export</div></div></div>
+    <div class="h">
+      <div class="logo"></div>
+      <div>
+        <div style="font-weight:600">Neon Visualizer</div>
+        <div class="small">Upload media, tweak and export</div>
+      </div>
+    </div>
     <div class="controls">
       <div class="row">
-        <label class="btn">Video<input id="videoFile" class="input-file" type="file" accept="video/*"></label>
+        <label class="btn">Video
+          <input id="videoFile" class="input-file" type="file" accept="video/*" />
+        </label>
         <button id="downloadVideoBtn" class="btn">Download original</button>
       </div>
 
       <div class="row">
-        <label class="btn">Cover<input id="imageFile" class="input-file" type="file" accept="image/*"></label>
-        <label class="btn">Audio<input id="audioFile" class="input-file" type="file" accept="audio/*"></label>
+        <label class="btn">Cover
+          <input id="imageFile" class="input-file" type="file" accept="image/*" />
+        </label>
+        <label class="btn">Audio
+          <input id="audioFile" class="input-file" type="file" accept="audio/*" />
+        </label>
       </div>
 
       <div class="row">
-        <input id="titleInput" placeholder="Artist — Song" style="flex:1;padding:9px;border-radius:8px;border:1px solid rgba(255,255,255,0.04);background:transparent;color:#e6f7ff">
+        <input
+          id="titleInput"
+          placeholder="Artist — Song"
+          style="flex:1;padding:9px;border-radius:8px;border:1px solid rgba(255,255,255,0.04);background:transparent;color:#e6f7ff"
+        />
         <button id="applyTitle" class="btn">Apply</button>
       </div>
 
       <div class="row">
-        <label class="range" style="flex:1">Bars opacity <input id="barsOpacity" type="range" min="0" max="1" step="0.01" value="0.7"></label>
+        <label class="range" style="flex:1"
+          >Bars opacity
+          <input id="barsOpacity" type="range" min="0" max="1" step="0.01" value="0.7" />
+        </label>
       </div>
       <div class="row">
-        <label class="range" style="flex:1">Circle size <input id="circleSize" type="range" min="120" max="360" step="1" value="240"></label>
+        <label class="range" style="flex:1"
+          >Circle size
+          <input id="circleSize" type="range" min="120" max="360" step="1" value="240" />
+        </label>
+      </div>
+
+      <div class="row">
+        <label class="range" style="flex:1"
+          >Bars count
+          <input id="barsCount" type="range" min="10" max="64" step="1" value="48" />
+        </label>
+      </div>
+
+      <div class="row">
+        <label style="flex:1;display:flex;flex-direction:column;gap:6px">
+          Bars Color Start
+          <input id="barsColorStart" type="color" value="#00f6ff" />
+        </label>
+      </div>
+      <div class="row">
+        <label style="flex:1;display:flex;flex-direction:column;gap:6px">
+          Bars Color End
+          <input id="barsColorEnd" type="color" value="#7c00ff" />
+        </label>
       </div>
 
       <div style="display:flex;gap:8px">
@@ -91,19 +351,22 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
         <button id="presetCalm" class="btn">Preset: Calm</button>
       </div>
 
-      <div class="footer">Shortcuts: Space = Play/Pause audio (if loaded) • R = record • S = screenshot</div>
+      <div class="footer">
+        Shortcuts: Space = Play/Pause audio (if loaded) • R = record • S = screenshot
+      </div>
     </div>
   </div>
 </div>
 
 <script>
-(async()=>{
+(async () => {
   // Elements
   const bgVideo = document.getElementById('bgVideo');
   const videoFile = document.getElementById('videoFile');
   const imageFile = document.getElementById('imageFile');
   const audioFile = document.getElementById('audioFile');
   const coverImage = document.getElementById('coverImage');
+  const circleImg = document.getElementById('circleImg');
   const titleInput = document.getElementById('titleInput');
   const applyTitle = document.getElementById('applyTitle');
   const songTitle = document.getElementById('songTitle');
@@ -112,159 +375,301 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
   const barsOverlay = document.getElementById('barsOverlay');
   const barsOpacity = document.getElementById('barsOpacity');
   const circleSize = document.getElementById('circleSize');
+  const barsCountInput = document.getElementById('barsCount');
+  const barsColorStart = document.getElementById('barsColorStart');
+  const barsColorEnd = document.getElementById('barsColorEnd');
   const dropzone = document.getElementById('dropzone');
   const recordBtn = document.getElementById('recordBtn');
   const downloadRender = document.getElementById('downloadRender');
   const downloadVideoBtn = document.getElementById('downloadVideoBtn');
 
-  // state
-  let audioEl = null; let audioCtx = null; let analyser = null; let dataArray = null; let sourceNode = null;
+  // State
+  let audioEl = null;
+  let audioCtx = null;
+  let analyser = null;
+  let dataArray = null;
+  let sourceNode = null;
   let raf;
   let circleDiameter = parseInt(circleSize.value);
-  let barsCount = 48;
+  let barsCount = parseInt(barsCountInput.value);
   let barsEls = [];
 
-  // canvas sizing
-  function resize(){ const rect = outputCanvas.getBoundingClientRect(); outputCanvas.width = rect.width; outputCanvas.height = rect.height; }
-  window.addEventListener('resize', ()=>{ resize(); createBars(); });
+  // Canvas sizing
+  function resize() {
+    const rect = outputCanvas.getBoundingClientRect();
+    outputCanvas.width = rect.width * devicePixelRatio;
+    outputCanvas.height = rect.height * devicePixelRatio;
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.scale(devicePixelRatio, devicePixelRatio);
+  }
+  window.addEventListener('resize', () => {
+    resize();
+    createBars();
+  });
   resize();
 
-  // create bar DOM elements
-  function createBars(){ barsOverlay.innerHTML=''; barsEls = []; for(let i=0;i<barsCount;i++){ const b = document.createElement('div'); b.className='bar'; b.style.height='6px'; b.style.opacity = barsOpacity.value; b.style.transition='height 0.08s linear'; barsOverlay.appendChild(b); barsEls.push(b);} }
+  // Create bars DOM elements for overlay (under text)
+  function createBars() {
+    barsOverlay.innerHTML = '';
+    barsEls = [];
+    barsCount = parseInt(barsCountInput.value);
+    for (let i = 0; i < barsCount; i++) {
+      const b = document.createElement('div');
+      b.className = 'bar';
+      b.style.height = '6px';
+      b.style.opacity = barsOpacity.value;
+      b.style.transition = 'height 0.08s linear';
+      barsOverlay.appendChild(b);
+      barsEls.push(b);
+    }
+  }
   createBars();
 
-  // file handlers
-  function loadVideoFile(file){ if(!file) return; const url = URL.createObjectURL(file); bgVideo.src = url; bgVideo.play(); // prepare download
-    downloadVideoBtn.onclick = ()=>{ const a = document.createElement('a'); a.href = url; a.download = file.name || 'video.mp4'; a.click(); } }
-  function loadImageFile(file){ if(!file) return; coverImage.src = URL.createObjectURL(file); }
-  async function loadAudioFile(file){ if(!file) return; if(audioEl){ audioEl.pause(); audioEl.src=''; }
-    audioEl = new Audio(URL.createObjectURL(file)); audioEl.loop = true; await audioEl.play(); // create audio ctx
-    if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    if(sourceNode) try{ sourceNode.disconnect(); }catch(e){}
+  // Load files
+  function loadVideoFile(file) {
+    if (!file) return;
+    const url = URL.createObjectURL(file);
+    bgVideo.src = url;
+    bgVideo.play();
+    // prepare download
+    downloadVideoBtn.onclick = () => {
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = file.name || 'video.mp4';
+      a.click();
+    };
+  }
+  function loadImageFile(file) {
+    if (!file) return;
+    coverImage.src = URL.createObjectURL(file);
+  }
+  async function loadAudioFile(file) {
+    if (!file) return;
+    if (audioEl) {
+      audioEl.pause();
+      audioEl.src = '';
+    }
+    audioEl = new Audio(URL.createObjectURL(file));
+    audioEl.loop = true;
+    await audioEl.play();
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (sourceNode) try {
+      sourceNode.disconnect();
+    } catch (e) { }
     sourceNode = audioCtx.createMediaElementSource(audioEl);
-    analyser = audioCtx.createAnalyser(); analyser.fftSize = 1024; const bufferLength = analyser.frequencyBinCount; dataArray = new Uint8Array(bufferLength);
+    analyser = audioCtx.createAnalyser();
+    analyser.fftSize = 1024;
+    const bufferLength = analyser.frequencyBinCount;
+    dataArray = new Uint8Array(bufferLength);
     sourceNode.connect(analyser);
-    const destination = audioCtx.destination; sourceNode.connect(destination);
-    // ensure audioctx resumed on interaction
-    try{ await audioCtx.resume(); }catch(e){}
+    const destination = audioCtx.destination;
+    sourceNode.connect(destination);
+    try { await audioCtx.resume(); } catch (e) { }
   }
 
-  videoFile.addEventListener('change', e=> loadVideoFile(e.target.files[0]));
-  imageFile.addEventListener('change', e=> loadImageFile(e.target.files[0]));
-  audioFile.addEventListener('change', e=> loadAudioFile(e.target.files[0]));
-  applyTitle.addEventListener('click', ()=>{ songTitle.textContent = titleInput.value || 'Artist — Song'; });
-
-  circleSize.addEventListener('input', ()=>{ circleDiameter = parseInt(circleSize.value); document.querySelector('.circle-img').style.width = circleDiameter+'px'; document.querySelector('.circle-img').style.height = circleDiameter+'px'; });
-  barsOpacity.addEventListener('input', ()=>{ const v = barsOpacity.value; barsEls.forEach(b=>b.style.opacity = v); });
-
-  // drag & drop
-  ['dragenter','dragover'].forEach(ev=>{dropzone.addEventListener(ev,e=>{e.preventDefault(); dropzone.style.borderColor='rgba(0,246,255,0.2)';});});
-  ['dragleave','drop'].forEach(ev=>{dropzone.addEventListener(ev,e=>{e.preventDefault(); dropzone.style.borderColor='transparent';});});
-  dropzone.addEventListener('drop', e=>{ const f = e.dataTransfer.files[0]; if(!f) return; if(f.type.startsWith('video')) loadVideoFile(f); else if(f.type.startsWith('image')) loadImageFile(f); else if(f.type.startsWith('audio')) loadAudioFile(f); });
-
-  // render loop: draw video, circular visualizer, rotating cover, bars under text
-  function render(){ raf = requestAnimationFrame(render);
-    const w = outputCanvas.width, h = outputCanvas.height; ctx.clearRect(0,0,w,h);
-    // draw bg video clipped into canvas (cover-fit)
-    if(bgVideo && bgVideo.readyState >= 2){ // draw centered
-      const vw = bgVideo.videoWidth, vh = bgVideo.videoHeight; if(vw && vh){ const arV = vw/vh; const arC = w/h; let sx=0,sy=0,sw=vw,sh=vh; if(arV > arC){ // video wider -> crop sides
-          const nw = vh*arC; sx = (vw - nw)/2; sw = nw;
-        } else { const nh = vw/arC; sy = (vh - nh)/2; sh = nh; }
-        ctx.drawImage(bgVideo, sx, sy, sw, sh, 0, 0, w, h);
-      }
-    } else {
-      // fallback gradient
-      const g = ctx.createLinearGradient(0,0,w,h); g.addColorStop(0,'rgba(8,12,20,0.8)'); g.addColorStop(1,'rgba(4,6,12,0.9)'); ctx.fillStyle=g; ctx.fillRect(0,0,w,h);
-    }
-
-    // circular visualizer around center
-    const cx = w/2, cy = h/2 - 10; const radius = Math.min(w,h)*0.18; const ring = radius + 6; const count = barsCount;
-    if(analyser && dataArray){ analyser.getByteFrequencyData(dataArray); }
-    for(let i=0;i<count;i++){
-      const t = dataArray? dataArray[i]/255 : 0.02;
-      const a = (i/count) * Math.PI*2 - Math.PI/2;
-      const r0 = ring; const r1 = ring + (t*220);
-      const x0 = cx + Math.cos(a)*r0; const y0 = cy + Math.sin(a)*r0;
-      const x1 = cx + Math.cos(a)*r1; const y1 = cy + Math.sin(a)*r1;
-      ctx.lineWidth = Math.max(2, Math.min(8, 2 + t*6));
-      ctx.strokeStyle = `rgba(255,255,255,${0.04 + t*0.9})`;
-      // neon gradient
-      ctx.shadowBlur = 12; ctx.shadowColor = 'rgba(124,0,255,0.25)';
-      ctx.beginPath(); ctx.moveTo(x0,y0); ctx.lineTo(x1,y1); ctx.stroke(); ctx.shadowBlur = 0;
-    }
-
-    // draw circular masked cover image (rotates via CSS on DOM, we draw a snapshot)
-    const img = coverImage; if(img && img.src){ // draw circular clip
-      const size = circleDiameter; const ix = cx - size/2, iy = cy - size/2; ctx.save(); ctx.beginPath(); ctx.arc(cx, cy, size/2, 0, Math.PI*2); ctx.clip(); try{ ctx.drawImage(img, ix, iy, size, size); }catch(e){} ctx.restore();
-      // subtle overlay ring
-      ctx.beginPath(); ctx.arc(cx, cy, size/2 + 6, 0, Math.PI*2); ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(0,246,255,0.12)'; ctx.stroke();
-    }
-
-    // bars under text (DOM bars synced visually) - draw translucent reflection
-    const barW = (w*0.6)/barsCount; const startX = (w - w*0.6)/2; const baseY = cy + Math.min(h*0.35, 260);
-    ctx.globalCompositeOperation = 'lighter';
-    for(let i=0;i<barsCount;i++){
-      const v = dataArray? (dataArray[i]/255) : 0.02; const bh = Math.max(4, v*140);
-      ctx.fillStyle = `rgba(0,246,255,${0.06 + (v*0.6)})`;
-      ctx.fillRect(startX + i*barW, baseY - bh, barW*0.7, bh);
-    }
-    ctx.globalCompositeOperation = 'source-over';
-
-    // draw title text with glow
-    ctx.font = '600 28px Inter, system-ui'; ctx.textAlign='center'; ctx.fillStyle='white'; ctx.shadowBlur = 24; ctx.shadowColor = 'rgba(0,246,255,0.25)'; ctx.fillText(songTitle.textContent, cx, baseY + 64);
-    ctx.shadowBlur = 0;
-  }
-
-  render();
-
-  // screenshot (download PNG)
-  downloadRender.addEventListener('click', ()=>{
-    const link = document.createElement('a'); link.href = outputCanvas.toDataURL('image/png'); link.download = 'visualizer.png'; link.click();
+  videoFile.addEventListener('change', e => loadVideoFile(e.target.files[0]));
+  imageFile.addEventListener('change', e => loadImageFile(e.target.files[0]));
+  audioFile.addEventListener('change', e => loadAudioFile(e.target.files[0]));
+  applyTitle.addEventListener('click', () => {
+    songTitle.textContent = titleInput.value || 'Artist — Song';
   });
 
-  // recording (canvas + audio)
-  let recorder, recordedChunks = [];
-  recordBtn.addEventListener('click', async ()=>{
-    if(recordBtn.dataset.recording === '1'){ // stop
-      recorder.stop(); recordBtn.textContent='Start Recording'; recordBtn.dataset.recording='0';
+  circleSize.addEventListener('input', () => {
+    circleDiameter = parseInt(circleSize.value);
+    circleImg.style.width = circleDiameter + 'px';
+    circleImg.style.height = circleDiameter + 'px';
+  });
+  barsOpacity.addEventListener('input', () => {
+    const v = barsOpacity.value;
+    barsEls.forEach(b => b.style.opacity = v);
+  });
+  barsCountInput.addEventListener('input', () => {
+    createBars();
+  });
+  barsColorStart.addEventListener('input', () => {
+    document.documentElement.style.setProperty('--bars-color-start', barsColorStart.value);
+  });
+  barsColorEnd.addEventListener('input', () => {
+    document.documentElement.style.setProperty('--bars-color-end', barsColorEnd.value);
+  });
+
+  // Drag & drop support
+  ['dragenter', 'dragover'].forEach(ev => {
+    dropzone.addEventListener(ev, e => {
+      e.preventDefault();
+      dropzone.style.borderColor = 'rgba(0,246,255,0.2)';
+    });
+  });
+  ['dragleave', 'drop'].forEach(ev => {
+    dropzone.addEventListener(ev, e => {
+      e.preventDefault();
+      dropzone.style.borderColor = '';
+    });
+  });
+  dropzone.addEventListener('drop', e => {
+    e.preventDefault();
+    if (e.dataTransfer.files.length === 0) return;
+    for (const file of e.dataTransfer.files) {
+      if (file.type.startsWith('video/')) {
+        videoFile.files = e.dataTransfer.files;
+        loadVideoFile(file);
+      } else if (file.type.startsWith('image/')) {
+        imageFile.files = e.dataTransfer.files;
+        loadImageFile(file);
+      } else if (file.type.startsWith('audio/')) {
+        audioFile.files = e.dataTransfer.files;
+        loadAudioFile(file);
+      }
+    }
+  });
+
+  // Draw loop for circle visualizer & bars update
+  function draw() {
+    if (!analyser) return;
+    analyser.getByteFrequencyData(dataArray);
+    ctx.clearRect(0, 0, outputCanvas.width, outputCanvas.height);
+
+    // Get canvas size
+    const w = outputCanvas.width / devicePixelRatio;
+    const h = outputCanvas.height / devicePixelRatio;
+
+    // Draw circle visualizer around circle image center
+    const centerX = w / 2;
+    const centerY = h / 2;
+    const radius = circleDiameter / 2 + 16;
+
+    const barsCountCircle = 48; // fixed for circle visualizer
+    const angleStep = (2 * Math.PI) / barsCountCircle;
+
+    for (let i = 0; i < barsCountCircle; i++) {
+      const val = dataArray[i];
+      const barLength = val / 2;
+      const angle = angleStep * i - Math.PI / 2;
+
+      const xStart = centerX + Math.cos(angle) * radius;
+      const yStart = centerY + Math.sin(angle) * radius;
+      const xEnd = centerX + Math.cos(angle) * (radius + barLength);
+      const yEnd = centerY + Math.sin(angle) * (radius + barLength);
+
+      ctx.strokeStyle = `hsl(${(i * 360) / barsCountCircle}, 100%, 70%)`;
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(xStart, yStart);
+      ctx.lineTo(xEnd, yEnd);
+      ctx.stroke();
+    }
+
+    // Update bars below text
+    for (let i = 0; i < barsEls.length; i++) {
+      const val = dataArray[i] || 0;
+      barsEls[i].style.height = `${val / 2 + 6}px`;
+    }
+
+    requestAnimationFrame(draw);
+  }
+
+  // Start the animation loop only when audio is loaded
+  function startVisualizer() {
+    if (!audioEl) return;
+    if (!analyser) return;
+    cancelAnimationFrame(raf);
+    draw();
+  }
+
+  // Keyboard shortcuts
+  window.addEventListener('keydown', e => {
+    if (!audioEl) return;
+    if (e.code === 'Space') {
+      e.preventDefault();
+      if (audioEl.paused) audioEl.play();
+      else audioEl.pause();
+    }
+    if (e.code === 'KeyR') {
+      recordBtn.click();
+    }
+    if (e.code === 'KeyS') {
+      downloadRender.click();
+    }
+  });
+
+  // Recording setup
+  let recorder = null;
+  let recordedChunks = [];
+  recordBtn.addEventListener('click', () => {
+    if (recorder && recorder.state === 'recording') {
+      recorder.stop();
+      recordBtn.textContent = 'Start Recording';
       return;
     }
-    // ensure audio exists
-    if(!audioEl){ alert('Load an audio file to include sound in the render'); }
-    // prepare stream
-    const canvasStream = outputCanvas.captureStream(30);
-    // if audio exists, pipe audio to MediaStream
-    if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    // create destination and connect sourceNode (which is connected to audioEl)
-    const dest = audioCtx.createMediaStreamDestination();
-    if(sourceNode) sourceNode.connect(dest);
-    // add audio track
-    const audioTracks = dest.stream.getAudioTracks(); if(audioTracks.length) canvasStream.addTrack(audioTracks[0]);
-    recorder = new MediaRecorder(canvasStream, {mimeType: 'video/webm;codecs=vp9,opus'});
+
     recordedChunks = [];
-    recorder.ondataavailable = e=>{ if(e.data.size) recordedChunks.push(e.data); };
-    recorder.onstop = ()=>{
-      const blob = new Blob(recordedChunks, {type:'video/webm'}); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'visualizer.webm'; a.click();
-      // disconnect fake dest
-      if(sourceNode) try{ sourceNode.disconnect(dest); }catch(e){}
+    let stream = outputCanvas.captureStream(30);
+    if (audioEl && !audioEl.paused) {
+      const audioStream = audioCtx.createMediaStreamDestination();
+      sourceNode.connect(audioStream);
+      stream.addTrack(audioStream.stream.getAudioTracks()[0]);
+    }
+
+    recorder = new MediaRecorder(stream, { mimeType: 'video/webm' });
+    recorder.ondataavailable = e => {
+      if (e.data.size > 0) recordedChunks.push(e.data);
     };
-    recorder.start(); recordBtn.textContent='Stop Recording'; recordBtn.dataset.recording='1';
+    recorder.onstop = e => {
+      const blob = new Blob(recordedChunks, { type: 'video/webm' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'visualizer.webm';
+      a.click();
+      URL.revokeObjectURL(url);
+    };
+    recorder.start();
+    recordBtn.textContent = 'Stop Recording';
   });
 
-  // keyboard shortcuts
-  window.addEventListener('keydown', e=>{
-    if(e.code === 'Space'){ if(audioEl){ if(audioEl.paused) audioEl.play(); else audioEl.pause(); } }
-    if(e.key.toLowerCase() === 'r'){ recordBtn.click(); }
-    if(e.key.toLowerCase() === 's'){ downloadRender.click(); }
+  // Screenshot export
+  downloadRender.addEventListener('click', () => {
+    outputCanvas.toBlob(blob => {
+      const a = document.createElement('a');
+      a.download = 'visualizer.png';
+      a.href = URL.createObjectURL(blob);
+      a.click();
+    });
   });
 
-  // presets
-  document.getElementById('presetNeon').addEventListener('click', ()=>{ document.documentElement.style.setProperty('--accent1','#00f6ff'); document.documentElement.style.setProperty('--accent2','#7c00ff'); });
-  document.getElementById('presetCalm').addEventListener('click', ()=>{ document.documentElement.style.setProperty('--accent1','#7ee0a8'); document.documentElement.style.setProperty('--accent2','#66b3ff'); });
+  // Auto-start visualizer when audio loaded
+  audioFile.addEventListener('change', () => {
+    setTimeout(startVisualizer, 300);
+  });
 
-  // basic play/pause when clicking stage
-  document.querySelector('.stage').addEventListener('click', ()=>{ if(audioEl) audioEl.paused?audioEl.play():audioEl.pause(); });
+  // Auto resize and circle size init
+  circleSize.dispatchEvent(new Event('input'));
 
+  // Presets
+  document.getElementById('presetNeon').addEventListener('click', () => {
+    barsColorStart.value = '#00f6ff';
+    barsColorEnd.value = '#7c00ff';
+    barsOpacity.value = 0.7;
+    barsCountInput.value = 48;
+    circleSize.value = 240;
+    barsColorStart.dispatchEvent(new Event('input'));
+    barsColorEnd.dispatchEvent(new Event('input'));
+    barsOpacity.dispatchEvent(new Event('input'));
+    barsCountInput.dispatchEvent(new Event('input'));
+    circleSize.dispatchEvent(new Event('input'));
+  });
+  document.getElementById('presetCalm').addEventListener('click', () => {
+    barsColorStart.value = '#7c7cff';
+    barsColorEnd.value = '#00ffff';
+    barsOpacity.value = 0.3;
+    barsCountInput.value = 28;
+    circleSize.value = 180;
+    barsColorStart.dispatchEvent(new Event('input'));
+    barsColorEnd.dispatchEvent(new Event('input'));
+    barsOpacity.dispatchEvent(new Event('input'));
+    barsCountInput.dispatchEvent(new Event('input'));
+    circleSize.dispatchEvent(new Event('input'));
+  });
 })();
 </script>
 </body>
