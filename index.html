@@ -1,353 +1,149 @@
-<!doctype html>
-<!--
-  Neon Audio Visualizer — single-file SPA
-  Features:
-    - Upload audio files (mp3/ogg/wav) or drag & drop
-    - Use microphone input (real-time)
-    - 3 visualization modes: Spectrum (bars), Radial (circular), Waveform (liquid)
-    - Sensitivity and smoothing controls
-    - FFT size selector and smoothingTimeConstant
-    - Screenshot (save PNG) of current canvas
-    - Presets + localStorage for settings
-    - Keyboard shortcuts: Space = play/pause, M = mic, S = screenshot
-  Open this file in a browser (Chrome/Edge/Firefox). Works fully offline.
--->
-
-<html lang="ru">
+<!DOCTYPE html>
+<html lang="en">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Neon Audio Visualizer</title>
 <style>
-  :root{
-    --bg:#071021; --panel:#0e1724; --accent:#00f6ff; --accent2:#7c00ff; --muted:#9fb4c9;
+  body {
+    margin: 0;
+    background: black;
+    overflow: hidden;
+    font-family: 'Poppins', sans-serif;
+    color: white;
+    text-align: center;
   }
-  *{box-sizing:border-box}
-  html,body{height:100%;margin:0;font-family:Inter, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial}
-  body{background:linear-gradient(180deg,#04101a 0%, #071021 60%); color:#dfeef8; display:flex; align-items:center; justify-content:center; padding:28px}
-  .app{width:100%;max-width:1100px;border-radius:14px;overflow:hidden;box-shadow:0 10px 40px rgba(2,6,23,0.7); display:grid; grid-template-columns: 1fr 360px; gap:18px}
-
-  /* Left: Canvas */
-  .canvas-wrap{background:linear-gradient(180deg, rgba(255,255,255,0.02), transparent); padding:18px}
-  .vis-canvas{width:100%;height:640px;background:radial-gradient(circle at 20% 10%, rgba(124,0,255,0.06), transparent 8%), linear-gradient(180deg, rgba(0,0,0,0.2), transparent); border-radius:10px;display:block}
-
-  /* Right: Controls */
-  .panel{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)); padding:18px; border-left:1px solid rgba(255,255,255,0.02)}
-  h1{font-size:18px;margin:0 0 10px 0; display:flex; align-items:center; gap:10px}
-  .logo{width:36px;height:36px;background:linear-gradient(90deg,var(--accent),var(--accent2)); border-radius:8px; box-shadow:0 6px 20px rgba(124,0,255,0.12), inset 0 -6px 18px rgba(0,0,0,0.25)}
-
-  .controls{display:flex;flex-direction:column;gap:12px}
-  .row{display:flex;gap:10px;align-items:center}
-  .btn{background:transparent;border:1px solid rgba(255,255,255,0.06);padding:10px 12px;border-radius:10px;color:var(--muted);cursor:pointer;transition:all .15s;display:inline-flex;align-items:center;gap:8px}
-  .btn:hover{transform:translateY(-2px); box-shadow:0 6px 22px rgba(0,0,0,0.25)}
-  .btn.primary{background:linear-gradient(90deg, rgba(0,246,255,0.08), rgba(124,0,255,0.06)); border:1px solid rgba(0,246,255,0.16); color:var(--accent)}
-  .muted{color:var(--muted);font-size:13px}
-
-  input[type=file]{display:none}
-  .dropzone{border:2px dashed rgba(255,255,255,0.03);padding:12px;border-radius:10px;text-align:center;color:var(--muted);font-size:13px}
-
-  label.range{display:flex;flex-direction:column;font-size:13px;color:var(--muted)}
-  input[type=range]{-webkit-appearance:none;width:100%}
-  input[type=range]::-webkit-slider-runnable-track{height:6px;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:6px}
-  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;background:#fff;border-radius:50%;margin-top:-6px}
-
-  select{background:transparent;border:1px solid rgba(255,255,255,0.04);padding:8px;border-radius:8px;color:var(--muted)}
-  .footer{font-size:12px;color:var(--muted);margin-top:6px}
-
-  /* small screens */
-  @media (max-width:980px){
-    .app{grid-template-columns:1fr;}
-    .vis-canvas{height:480px}
+  video.bg-video {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    min-width: 100%;
+    min-height: 100%;
+    transform: translate(-50%, -50%);
+    z-index: -2;
+    object-fit: cover;
   }
-
-  /* neon glow effects for canvas elements */
-  .credit{font-size:12px;color:rgba(200,230,255,0.6)}
+  canvas {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+  }
+  .circle-img {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 200px;
+    height: 200px;
+    transform: translate(-50%, -50%);
+    border-radius: 50%;
+    overflow: hidden;
+    animation: spin 20s linear infinite;
+  }
+  .circle-img img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  @keyframes spin {
+    from { transform: translate(-50%, -50%) rotate(0deg); }
+    to { transform: translate(-50%, -50%) rotate(360deg); }
+  }
+  .song-title {
+    position: absolute;
+    bottom: 15%;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 28px;
+    font-weight: 600;
+    text-shadow: 0 0 10px cyan, 0 0 20px magenta;
+  }
 </style>
 </head>
 <body>
-  <div class="app" id="app">
-    <div class="canvas-wrap">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-        <div style="display:flex;gap:12px;align-items:center">
-          <div class="logo"></div>
-          <div>
-            <div style="font-weight:600">Neon Visualizer</div>
-            <div class="muted" style="font-size:12px">Upload audio or enable microphone — press Space to play/pause</div>
-          </div>
-        </div>
-        <div style="display:flex;gap:8px;align-items:center">
-          <button class="btn" id="playBtn">Play</button>
-          <button class="btn" id="micBtn">Mic</button>
-          <button class="btn" id="screenshotBtn">Screenshot</button>
-        </div>
-      </div>
+  <video class="bg-video" autoplay loop muted></video>
+  <canvas id="circleVisualizer"></canvas>
+  <div class="circle-img"><img id="coverImage" src=""></div>
+  <canvas id="barVisualizer"></canvas>
+  <div class="song-title" id="songTitle">Artist — Song</div>
 
-      <canvas id="vis" class="vis-canvas"></canvas>
-
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px">
-        <div class="muted">Mode: <span id="modeLabel">Spectrum</span></div>
-        <div class="muted">FFT: <span id="fftLabel">2048</span></div>
-      </div>
-    </div>
-
-    <div class="panel">
-      <h1><div class="logo"></div>Настройки</h1>
-      <div class="controls">
-
-        <div class="row">
-          <label class="btn" for="fileInput">Upload</label>
-          <input id="fileInput" type="file" accept="audio/*">
-          <div style="flex:1"></div>
-        </div>
-
-        <div class="dropzone" id="dropzone">Перетащи аудио сюда или нажми Upload</div>
-
-        <div class="row">
-          <select id="modeSelect">
-            <option value="spectrum">Spectrum (Bars)</option>
-            <option value="radial">Radial (Circle)</option>
-            <option value="wave">Waveform (Liquid)</option>
-          </select>
-          <select id="fftSelect">
-            <option>512</option>
-            <option>1024</option>
-            <option selected>2048</option>
-            <option>4096</option>
-          </select>
-        </div>
-
-        <label class="range">Чувствительность <input id="sensitivity" type="range" min="0.2" max="4" step="0.05" value="1"></label>
-        <label class="range">Сглаживание <input id="smoothing" type="range" min="0" max="0.95" step="0.01" value="0.6"></label>
-
-        <div style="display:flex;gap:8px">
-          <button class="btn primary" id="presetNight">Preset: Neon Night</button>
-          <button class="btn" id="presetCalm">Preset: Calm</button>
-        </div>
-
-        <div style="display:flex;gap:8px">
-          <button class="btn" id="saveSettings">Save</button>
-          <button class="btn" id="loadSettings">Load</button>
-        </div>
-
-        <div class="row" style="margin-top:6px">
-          <div style="flex:1">
-            <div class="muted">Status</div>
-            <div id="status" class="credit">Idle</div>
-          </div>
-        </div>
-
-        <div class="footer">Shortcuts: <strong>Space</strong> play/pause, <strong>M</strong> mic, <strong>S</strong> screenshot</div>
-      </div>
-    </div>
-  </div>
+  <input type="file" id="videoUpload" accept="video/*">
+  <input type="file" id="imageUpload" accept="image/*">
+  <input type="file" id="audioUpload" accept="audio/*">
+  <input type="text" id="titleInput" placeholder="Enter Artist — Song">
 
 <script>
-(async function(){
-  // Basic state
-  const canvas = document.getElementById('vis');
-  const ctx = canvas.getContext('2d');
-  let W=0,H=0; function resize(){ W = canvas.width = canvas.clientWidth * devicePixelRatio; H = canvas.height = canvas.clientHeight * devicePixelRatio; ctx.scale(devicePixelRatio, devicePixelRatio); }
-  window.addEventListener('resize',()=>{ resize(); });
-  resize();
+  const video = document.querySelector('.bg-video');
+  const videoUpload = document.getElementById('videoUpload');
+  const imageUpload = document.getElementById('imageUpload');
+  const coverImage = document.getElementById('coverImage');
+  const titleInput = document.getElementById('titleInput');
+  const songTitle = document.getElementById('songTitle');
+  const audioUpload = document.getElementById('audioUpload');
 
-  // Audio setup
-  const AudioCtx = window.AudioContext || window.webkitAudioContext;
-  let audioCtx = null;
-  let sourceNode = null;
-  let analyser = null;
-  let dataArray = null;
-  let bufferSource = null;
-  let mediaStream = null;
+  videoUpload.onchange = e => {
+    const file = e.target.files[0];
+    if (file) video.src = URL.createObjectURL(file);
+  };
+  imageUpload.onchange = e => {
+    const file = e.target.files[0];
+    if (file) coverImage.src = URL.createObjectURL(file);
+  };
+  titleInput.oninput = () => {
+    songTitle.textContent = titleInput.value;
+  };
 
-  // DOM
-  const fileInput = document.getElementById('fileInput');
-  const dropzone = document.getElementById('dropzone');
-  const playBtn = document.getElementById('playBtn');
-  const micBtn = document.getElementById('micBtn');
-  const screenshotBtn = document.getElementById('screenshotBtn');
-  const modeSelect = document.getElementById('modeSelect');
-  const fftSelect = document.getElementById('fftSelect');
-  const sensitivityEl = document.getElementById('sensitivity');
-  const smoothingEl = document.getElementById('smoothing');
-  const statusEl = document.getElementById('status');
-  const modeLabel = document.getElementById('modeLabel');
-  const fftLabel = document.getElementById('fftLabel');
+  const ctxCircle = document.getElementById('circleVisualizer').getContext('2d');
+  const ctxBar = document.getElementById('barVisualizer').getContext('2d');
+  let audioCtx, analyser, source, dataArray;
 
-  // Controls state
-  let playing = false;
-  let mode = modeSelect.value;
-  let fft = parseInt(fftSelect.value);
-  let sensitivity = parseFloat(sensitivityEl.value);
-  let smoothing = parseFloat(smoothingEl.value);
-
-  // Utils
-  function updateStatus(t){ statusEl.textContent = t; }
-
-  function ensureAudio(){ if(!audioCtx) audioCtx = new AudioCtx(); }
-
-  function createAnalyser(){ if(!audioCtx) ensureAudio(); analyser = audioCtx.createAnalyser(); analyser.fftSize = fft; analyser.smoothingTimeConstant = smoothing; const bufferLength = analyser.frequencyBinCount; dataArray = new Uint8Array(bufferLength); }
-
-  // File loading
-  async function loadFile(file){ stopMic(); if(bufferSource){ try{ bufferSource.stop(); }catch(e){} bufferSource=null; }
-    ensureAudio(); const array = await file.arrayBuffer(); const audioBuffer = await audioCtx.decodeAudioData(array);
-    bufferSource = audioCtx.createBufferSource(); bufferSource.buffer = audioBuffer;
-    createAnalyser(); sourceNode = bufferSource; bufferSource.connect(analyser); analyser.connect(audioCtx.destination);
-    bufferSource.onended = ()=>{ playing=false; playBtn.textContent='Play'; updateStatus('Finished'); };
-    play(); updateStatus('Loaded: '+file.name);
-  }
-
-  // Play / Pause
-  function play(){ if(!bufferSource) { updateStatus('No audio loaded'); return; } if(!audioCtx) ensureAudio(); if(audioCtx.state === 'suspended') audioCtx.resume(); if(!playing){ // start playing
-      if(bufferSource.startTime==null){ try{ bufferSource.start(0); }catch(e){ /* maybe already started */ } }
-      playing=true; playBtn.textContent='Pause'; updateStatus('Playing'); startRender();
-    } else { // pause - can't pause BufferSource, so we stop and recreate from currentTime => implement simple pause by suspending audioContext
-      audioCtx.suspend(); playing=false; playBtn.textContent='Play'; updateStatus('Paused'); }
-  }
-
-  // For full control we'd need to implement custom playback with currentTime tracking; simplified here for single playthrough.
-
-  // Mic
-  async function startMic(){ stopMic(); try{
-      mediaStream = await navigator.mediaDevices.getUserMedia({audio:true}); ensureAudio(); createAnalyser(); const micSource = audioCtx.createMediaStreamSource(mediaStream);
-      micSource.connect(analyser); analyser.connect(audioCtx.destination);
-      sourceNode = micSource; playing = true; micBtn.textContent='Mic (on)'; updateStatus('Mic active'); startRender();
-    }catch(e){ console.error(e); updateStatus('Mic error'); }
-  }
-  function stopMic(){ if(mediaStream){ mediaStream.getTracks().forEach(t=>t.stop()); mediaStream=null; }
-    if(micBtn) micBtn.textContent='Mic';
-  }
-
-  // Screenshot
-  function screenshot(){ // save current canvas view as PNG
-    // draw a subtle frame for exporting at 1x CSS pixels
-    const w = canvas.clientWidth, h = canvas.clientHeight;
-    const exportCanvas = document.createElement('canvas'); exportCanvas.width = w; exportCanvas.height = h; const ex = exportCanvas.getContext('2d');
-    // copy current canvas visual -> easiest is to draw scaled down image from real canvas
-    ex.drawImage(canvas, 0, 0, w, h);
-    const a = document.createElement('a'); a.href = exportCanvas.toDataURL('image/png'); a.download = 'visualizer.png'; a.click(); updateStatus('Screenshot saved'); }
-
-  // Drag & Drop
-  dropzone.addEventListener('dragover', e=>{ e.preventDefault(); dropzone.style.borderColor='rgba(0,246,255,0.25)'; });
-  dropzone.addEventListener('dragleave', e=>{ dropzone.style.borderColor='rgba(255,255,255,0.03)'; });
-  dropzone.addEventListener('drop', e=>{ e.preventDefault(); dropzone.style.borderColor='rgba(255,255,255,0.03)'; const f = e.dataTransfer.files[0]; if(f) loadFile(f); });
-
-  fileInput.addEventListener('change', ()=>{ const f = fileInput.files[0]; if(f) loadFile(f); });
-
-  playBtn.addEventListener('click', ()=>{ play(); });
-  micBtn.addEventListener('click', ()=>{ if(mediaStream) { stopMic(); updateStatus('Mic stopped'); } else startMic(); });
-  screenshotBtn.addEventListener('click', screenshot);
-
-  modeSelect.addEventListener('change', ()=>{ mode = modeSelect.value; modeLabel.textContent = mode.charAt(0).toUpperCase()+mode.slice(1); });
-  fftSelect.addEventListener('change', ()=>{ fft = parseInt(fftSelect.value); fftLabel.textContent = fft; if(analyser) { analyser.fftSize = fft; dataArray = new Uint8Array(analyser.frequencyBinCount); } });
-  sensitivityEl.addEventListener('input', ()=>{ sensitivity = parseFloat(sensitivityEl.value); });
-  smoothingEl.addEventListener('input', ()=>{ smoothing = parseFloat(smoothingEl.value); if(analyser) analyser.smoothingTimeConstant = smoothing; });
-
-  // Presets
-  document.getElementById('presetNight').addEventListener('click', ()=>{
-    document.body.style.setProperty('--accent','#00f6ff'); document.body.style.setProperty('--accent2','#7c00ff'); sensitivityEl.value=1.1; smoothingEl.value=0.7; sensitivity=1.1; smoothing=0.7; updateStatus('Preset: Neon Night');
-  });
-  document.getElementById('presetCalm').addEventListener('click', ()=>{
-    document.body.style.setProperty('--accent','#7ee0a8'); document.body.style.setProperty('--accent2','#66b3ff'); sensitivityEl.value=0.8; smoothingEl.value=0.85; sensitivity=0.8; smoothing=0.85; updateStatus('Preset: Calm');
-  });
-
-  // Save / Load settings
-  document.getElementById('saveSettings').addEventListener('click', ()=>{
-    const s = {mode:modeSelect.value,fft:fftSelect.value,sensitivity:sensitivityEl.value,smoothing:smoothingEl.value,accent:getComputedStyle(document.body).getPropertyValue('--accent'),accent2:getComputedStyle(document.body).getPropertyValue('--accent2')};
-    localStorage.setItem('nv_settings', JSON.stringify(s)); updateStatus('Settings saved');
-  });
-  document.getElementById('loadSettings').addEventListener('click', ()=>{
-    const s = JSON.parse(localStorage.getItem('nv_settings')||'null'); if(!s) { updateStatus('No saved settings'); return; }
-    modeSelect.value=s.mode; fftSelect.value=s.fft; sensitivityEl.value=s.sensitivity; smoothingEl.value=s.smoothing; document.body.style.setProperty('--accent', s.accent); document.body.style.setProperty('--accent2', s.accent2);
-    mode = modeSelect.value; fft = parseInt(fftSelect.value); sensitivity = parseFloat(sensitivityEl.value); smoothing = parseFloat(smoothingEl.value); if(analyser) { analyser.fftSize = fft; analyser.smoothingTimeConstant = smoothing; dataArray = new Uint8Array(analyser.frequencyBinCount); }
-    updateStatus('Settings loaded');
-  });
-
-  // Keyboard shortcuts
-  window.addEventListener('keydown',(e)=>{
-    if(e.code === 'Space'){ e.preventDefault(); play(); }
-    if(e.key.toLowerCase() === 'm'){ if(mediaStream) { stopMic(); updateStatus('Mic stopped'); } else startMic(); }
-    if(e.key.toLowerCase() === 's'){ screenshot(); }
-  });
-
-  // Render loop
-  let raf = null;
-  function startRender(){ if(!analyser) createAnalyser(); cancelAnimationFrame(raf); function draw(){ raf = requestAnimationFrame(draw);
-      // clear with subtle gradient
-      const cw = canvas.clientWidth, ch = canvas.clientHeight;
-      ctx.save(); ctx.clearRect(0,0,cw,ch);
-      // background glow
-      ctx.fillStyle = 'rgba(2,6,12,0.3)'; ctx.fillRect(0,0,cw,ch);
-
-      if(!analyser) return;
-      analyser.getByteFrequencyData(dataArray);
-      // convert to floats
-      const arr = Float32Array.from(dataArray).map(v=>v/255);
-
-      ctx.translate(0,0);
-      const pad = 20;
-
-      if(mode === 'spectrum'){
-        const barCount = 64; const step = Math.max(1, Math.floor(arr.length / barCount));
-        const barW = (cw - pad*2) / barCount; for(let i=0;i<barCount;i++){
-          const idx = Math.floor(i*step);
-          const v = arr[idx] * sensitivity;
-          const x = pad + i*barW; const h = Math.max(2, v * (ch - 120));
-          // gradient fill
-          const g = ctx.createLinearGradient(x, ch-90, x, ch-90-h);
-          g.addColorStop(0, 'rgba(0,246,255,0.12)'); g.addColorStop(0.6, 'rgba(124,0,255,0.18)'); g.addColorStop(1, 'rgba(255,255,255,0.9)');
-          // glow
-          ctx.shadowBlur = 18; ctx.shadowColor = 'rgba(124,0,255,0.25)';
-          ctx.fillStyle = g; ctx.fillRect(x, ch-90-h, barW*0.8, h);
-          ctx.shadowBlur = 0;
-        }
-      } else if(mode === 'radial'){
-        const cx = cw/2, cy = ch/2; const radius = Math.min(cw,ch)*0.22; const rings = 120;
-        ctx.lineWidth = 2; ctx.globalCompositeOperation = 'lighter';
-        for(let i=0;i<rings;i++){
-          const a = (i/rings)*Math.PI*2;
-          const idx = Math.floor((i/rings) * arr.length);
-          const v = Math.pow(arr[idx], 1.2) * sensitivity;
-          const r = radius + v * 200;
-          const x = cx + Math.cos(a)*r; const y = cy + Math.sin(a)*r;
-          ctx.beginPath(); ctx.moveTo(cx + Math.cos(a)*(radius), cy + Math.sin(a)*(radius)); ctx.lineTo(x,y);
-          // color shift
-          const hue = Math.floor(180 + i*1.2);
-          ctx.strokeStyle = `hsla(${hue},90%,60%,${Math.min(0.9,v)})`;
-          ctx.stroke();
-        }
-        ctx.globalCompositeOperation = 'source-over';
-      } else if(mode === 'wave'){
-        // waveform style: draw smoothed lines based on frequency bins
-        ctx.lineWidth = 2; ctx.strokeStyle = 'rgba(0,246,255,0.9)'; ctx.beginPath();
-        const len = Math.min(arr.length, 1024);
-        for(let i=0;i<len;i++){
-          const x = pad + (i/len)*(cw - pad*2);
-          const y = ch*0.55 - (arr[i]*sensitivity*120);
-          if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
-        }
-        ctx.stroke();
-        // mirrored
-        ctx.lineWidth = 1.2; ctx.strokeStyle = 'rgba(124,0,255,0.6)'; ctx.beginPath();
-        for(let i=0;i<len;i++){
-          const x = pad + (i/len)*(cw - pad*2);
-          const y = ch*0.55 + (arr[i]*sensitivity*70);
-          if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
-        }
-        ctx.stroke();
-      }
-
-      ctx.restore();
-    }
+  audioUpload.onchange = e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const audio = new Audio(URL.createObjectURL(file));
+    audio.loop = true;
+    audio.play();
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    analyser = audioCtx.createAnalyser();
+    source = audioCtx.createMediaElementSource(audio);
+    source.connect(analyser);
+    analyser.connect(audioCtx.destination);
+    analyser.fftSize = 256;
+    dataArray = new Uint8Array(analyser.frequencyBinCount);
     draw();
+  };
+
+  function draw() {
+    requestAnimationFrame(draw);
+    analyser.getByteFrequencyData(dataArray);
+
+    ctxCircle.clearRect(0,0,window.innerWidth,window.innerHeight);
+    ctxCircle.translate(window.innerWidth/2, window.innerHeight/2);
+    let bars = 64;
+    for (let i = 0; i < bars; i++) {
+      let rads = (Math.PI * 2) / bars;
+      let barHeight = dataArray[i] * 0.8;
+      let x = Math.cos(rads * i) * 150;
+      let y = Math.sin(rads * i) * 150;
+      ctxCircle.save();
+      ctxCircle.strokeStyle = `hsl(${i*6},100%,50%)`;
+      ctxCircle.lineWidth = 3;
+      ctxCircle.beginPath();
+      ctxCircle.moveTo(x, y);
+      ctxCircle.lineTo(x * 1.2, y * 1.2);
+      ctxCircle.stroke();
+      ctxCircle.restore();
+    }
+    ctxCircle.setTransform(1,0,0,1,0,0);
+
+    ctxBar.clearRect(0,0,window.innerWidth,window.innerHeight);
+    let barWidth = (window.innerWidth / bars) * 0.6;
+    for (let i = 0; i < bars; i++) {
+      let barHeight = dataArray[i] * 0.7;
+      ctxBar.fillStyle = `rgba(0,255,255,0.6)`;
+      ctxBar.fillRect(i * barWidth, window.innerHeight * 0.8 - barHeight, barWidth, barHeight);
+    }
   }
-
-  // Initialize visuals sizing
-  function init(){ resize(); updateStatus('Ready'); }
-  init();
-
-  // expose for debugging
-  window.__nv = {startMic, stopMic, loadFile};
-})();
 </script>
 </body>
 </html>
